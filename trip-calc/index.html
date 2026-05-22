@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Baguio ↔ Bataan Trip Split</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      .num-input::-webkit-outer-spin-button,
+      .num-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .num-input {
+        -moz-appearance: textfield;
+      }
+      .glow {
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.05),
+          0 30px 60px -20px rgba(0, 0, 0, 0.6),
+          0 18px 36px -18px rgba(99, 102, 241, 0.45);
+      }
+      .field {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.18s ease;
+      }
+      .field:focus-within {
+        border-color: rgba(129, 140, 248, 0.55);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+      }
+      .seg {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .seg button {
+        transition: all 0.18s ease;
+      }
+      .seg button.active {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        box-shadow: 0 8px 20px -10px rgba(99, 102, 241, 0.8);
+      }
+      .pill {
+        background: rgba(99, 102, 241, 0.12);
+        color: #c7d2fe;
+        border: 1px solid rgba(99, 102, 241, 0.25);
+      }
+      .grad-text {
+        background: linear-gradient(135deg, #a5b4fc, #f0abfc);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .ring-result {
+        background:
+          radial-gradient(
+            120% 120% at 0% 0%,
+            rgba(99, 102, 241, 0.25),
+            transparent 50%
+          ),
+          radial-gradient(
+            120% 120% at 100% 100%,
+            rgba(236, 72, 153, 0.18),
+            transparent 55%
+          ),
+          rgba(17, 17, 23, 0.7);
+      }
+      .copy-btn:active {
+        transform: scale(0.97);
+      }
+      details > summary {
+        list-style: none;
+        cursor: pointer;
+      }
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+      details[open] .chev {
+        transform: rotate(180deg);
+      }
+      .chev {
+        transition: transform 0.2s ease;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#0a0a0f] text-slate-100 antialiased">
+    <div
+      class="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-70"
+    >
+      <div
+        class="absolute -top-32 -left-32 h-[420px] w-[420px] rounded-full bg-indigo-600/30 blur-[120px]"
+      ></div>
+      <div
+        class="absolute -bottom-32 -right-32 h-[420px] w-[420px] rounded-full bg-fuchsia-600/20 blur-[120px]"
+      ></div>
+    </div>
+
+    <main class="mx-auto max-w-5xl px-5 py-10 sm:py-14">
+      <header class="mb-8 flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <span class="pill rounded-full px-3 py-1 text-xs font-medium">
+            Road trip cost splitter
+          </span>
+          <span class="text-xs text-slate-500">Class 1 vehicle · PHP</span>
+        </div>
+        <h1
+          class="text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl"
+        >
+          <span class="grad-text">Baguio ↔ Bataan</span>
+          <span class="text-slate-200">contribution calculator</span>
+        </h1>
+        <p class="max-w-2xl text-sm text-slate-400 sm:text-base">
+          Splits gas + tolls fairly between passengers — accounting for
+          different fuel prices in Baguio vs. Bataan and the brutal fuel hit on
+          the climb back up to the mountains.
+        </p>
+      </header>
+
+      <div class="grid gap-6 lg:grid-cols-5">
+        <section
+          class="glow lg:col-span-3 rounded-3xl bg-[#0f0f17]/80 p-6 backdrop-blur"
+        >
+          <div class="mb-5 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Trip details</h2>
+            <button
+              id="resetBtn"
+              class="text-xs text-slate-400 hover:text-slate-200"
+              type="button"
+            >
+              Reset to defaults
+            </button>
+          </div>
+
+          <div class="space-y-5">
+            <div>
+              <label class="mb-2 block text-xs font-medium text-slate-400"
+                >Trip type</label
+              >
+              <div class="seg grid grid-cols-2 rounded-xl p-1">
+                <button
+                  type="button"
+                  data-trip="round"
+                  class="trip-btn active rounded-lg px-3 py-2 text-sm font-medium"
+                >
+                  Round trip
+                </button>
+                <button
+                  type="button"
+                  data-trip="oneway"
+                  class="trip-btn rounded-lg px-3 py-2 text-sm font-medium text-slate-300"
+                >
+                  One way
+                </button>
+              </div>
+              <p class="mt-2 text-xs text-slate-500">
+                One way = Baguio → Bataan only. Round trip adds the climb back
+                up (filled with Bataan-priced fuel).
+              </p>
+            </div>
+
+            <div class="field rounded-xl px-4 py-3">
+              <label class="block text-xs font-medium text-slate-400"
+                >Number of persons sharing</label
+              >
+              <input
+                id="persons"
+                type="number"
+                min="1"
+                step="1"
+                value="4"
+                class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+              />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400"
+                  >Gas price in Baguio (₱/L)</label
+                >
+                <input
+                  id="priceBaguio"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value="68.50"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400"
+                  >Gas price in Bataan (₱/L)</label
+                >
+                <input
+                  id="priceBataan"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value="63.50"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400">
+                  Mileage going down (km/L)
+                  <span class="text-slate-500">· Baguio → Bataan</span>
+                </label>
+                <input
+                  id="mileageDown"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value="14"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400">
+                  Mileage going up (km/L)
+                  <span class="text-slate-500">· Bataan → Baguio</span>
+                </label>
+                <input
+                  id="mileageUp"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value="9"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400">
+                  Distance one way (km)
+                </label>
+                <input
+                  id="distance"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="280"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+              <div class="field rounded-xl px-4 py-3">
+                <label class="block text-xs font-medium text-slate-400">
+                  Toll fees one way (₱)
+                  <span class="text-slate-500">· TPLEX + NLEX + SCTEX</span>
+                </label>
+                <input
+                  id="toll"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="932"
+                  class="num-input mt-1 w-full bg-transparent text-xl font-semibold outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="field rounded-xl px-4 py-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="block text-xs font-medium text-slate-400">
+                    Driver pays too?
+                  </label>
+                  <p class="text-xs text-slate-500">
+                    If off, the driver is excluded from the split (passengers
+                    cover everything).
+                  </p>
+                </div>
+                <label
+                  class="relative inline-flex cursor-pointer items-center"
+                >
+                  <input
+                    id="driverPays"
+                    type="checkbox"
+                    checked
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="h-6 w-11 rounded-full bg-slate-700 peer-checked:bg-indigo-500 transition-colors"
+                  ></div>
+                  <div
+                    class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"
+                  ></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lg:col-span-2 space-y-4">
+          <div class="ring-result glow rounded-3xl p-6">
+            <div class="text-xs font-medium uppercase tracking-wider text-indigo-300">
+              Each person pays
+            </div>
+            <div
+              id="perPerson"
+              class="mt-1 text-4xl font-extrabold tracking-tight sm:text-5xl"
+            >
+              ₱0
+            </div>
+            <div class="mt-1 text-xs text-slate-400">
+              <span id="splitNote">split among 4 people</span>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-3">
+              <div class="rounded-2xl bg-white/[0.04] p-3">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">
+                  Total trip cost
+                </div>
+                <div id="totalCost" class="mt-0.5 text-xl font-bold">₱0</div>
+              </div>
+              <div class="rounded-2xl bg-white/[0.04] p-3">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">
+                  Total fuel used
+                </div>
+                <div id="totalFuel" class="mt-0.5 text-xl font-bold">0 L</div>
+              </div>
+            </div>
+
+            <button
+              id="copyBtn"
+              type="button"
+              class="copy-btn mt-5 w-full rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:from-indigo-400 hover:to-fuchsia-400"
+            >
+              Copy summary to share
+            </button>
+          </div>
+
+          <details class="glow rounded-3xl bg-[#0f0f17]/80 p-5" open>
+            <summary
+              class="flex items-center justify-between text-sm font-semibold"
+            >
+              <span>Breakdown</span>
+              <svg
+                class="chev h-4 w-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </summary>
+            <dl
+              id="breakdown"
+              class="mt-4 space-y-2 text-sm text-slate-300"
+            ></dl>
+          </details>
+
+          <div class="rounded-3xl border border-white/5 bg-white/[0.02] p-4 text-xs text-slate-400">
+            <p class="font-medium text-slate-300">Defaults reference</p>
+            <ul class="mt-2 list-disc space-y-1 pl-4">
+              <li>Distance Baguio → Morong, Bataan ≈ 280 km</li>
+              <li>Toll one way (Class 1, TPLEX + NLEX + SCTEX) ≈ ₱932</li>
+              <li>Mileage down ~14 km/L · up ~9 km/L (sedan, ballpark)</li>
+            </ul>
+            <p class="mt-2">Adjust everything to fit your vehicle and current pump prices.</p>
+          </div>
+        </section>
+      </div>
+
+      <footer class="mt-10 text-center text-xs text-slate-500">
+        All math runs locally in your browser. No data leaves this page.
+      </footer>
+    </main>
+
+    <div
+      id="toast"
+      class="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-sm text-slate-100 opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity"
+    >
+      Copied!
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const fmtPHP = (n) =>
+        "₱" +
+        n.toLocaleString("en-PH", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      const fmtL = (n) => n.toFixed(2) + " L";
+
+      const DEFAULTS = {
+        persons: 4,
+        priceBaguio: 68.5,
+        priceBataan: 63.5,
+        mileageDown: 14,
+        mileageUp: 9,
+        distance: 280,
+        toll: 932,
+        driverPays: true,
+        trip: "round",
+      };
+
+      let tripType = "round";
+
+      function getInputs() {
+        return {
+          persons: Math.max(1, parseInt($("persons").value) || 1),
+          priceBaguio: parseFloat($("priceBaguio").value) || 0,
+          priceBataan: parseFloat($("priceBataan").value) || 0,
+          mileageDown: Math.max(0.1, parseFloat($("mileageDown").value) || 0.1),
+          mileageUp: Math.max(0.1, parseFloat($("mileageUp").value) || 0.1),
+          distance: Math.max(0, parseFloat($("distance").value) || 0),
+          toll: Math.max(0, parseFloat($("toll").value) || 0),
+          driverPays: $("driverPays").checked,
+          trip: tripType,
+        };
+      }
+
+      function calc(i) {
+        const litersDown = i.distance / i.mileageDown;
+        const fuelDownCost = litersDown * i.priceBaguio;
+        const tollDown = i.toll;
+
+        let litersUp = 0,
+          fuelUpCost = 0,
+          tollUp = 0;
+        if (i.trip === "round") {
+          litersUp = i.distance / i.mileageUp;
+          fuelUpCost = litersUp * i.priceBataan;
+          tollUp = i.toll;
+        }
+
+        const totalFuel = litersDown + litersUp;
+        const totalFuelCost = fuelDownCost + fuelUpCost;
+        const totalToll = tollDown + tollUp;
+        const total = totalFuelCost + totalToll;
+
+        const payers = i.driverPays ? i.persons : Math.max(1, i.persons - 1);
+        const perPerson = total / payers;
+
+        return {
+          litersDown,
+          fuelDownCost,
+          tollDown,
+          litersUp,
+          fuelUpCost,
+          tollUp,
+          totalFuel,
+          totalFuelCost,
+          totalToll,
+          total,
+          payers,
+          perPerson,
+        };
+      }
+
+      function render() {
+        const i = getInputs();
+        const r = calc(i);
+
+        $("perPerson").textContent = fmtPHP(r.perPerson);
+        $("totalCost").textContent = fmtPHP(r.total);
+        $("totalFuel").textContent = fmtL(r.totalFuel);
+        $("splitNote").textContent =
+          "split among " +
+          r.payers +
+          " " +
+          (r.payers === 1 ? "person" : "people") +
+          (i.driverPays ? "" : " (driver excluded)");
+
+        const rows = [];
+        rows.push([
+          "Baguio → Bataan fuel",
+          `${r.litersDown.toFixed(2)} L × ₱${i.priceBaguio.toFixed(2)}`,
+          fmtPHP(r.fuelDownCost),
+        ]);
+        rows.push(["Baguio → Bataan toll", "TPLEX + NLEX + SCTEX", fmtPHP(r.tollDown)]);
+        if (i.trip === "round") {
+          rows.push([
+            "Bataan → Baguio fuel",
+            `${r.litersUp.toFixed(2)} L × ₱${i.priceBataan.toFixed(2)}`,
+            fmtPHP(r.fuelUpCost),
+          ]);
+          rows.push(["Bataan → Baguio toll", "Return leg", fmtPHP(r.tollUp)]);
+        }
+        rows.push(["Total fuel cost", "", fmtPHP(r.totalFuelCost)]);
+        rows.push(["Total toll", "", fmtPHP(r.totalToll)]);
+        rows.push(["Grand total", "", fmtPHP(r.total)]);
+        rows.push([
+          "Per person",
+          `÷ ${r.payers}`,
+          fmtPHP(r.perPerson),
+        ]);
+
+        $("breakdown").innerHTML = rows
+          .map(
+            ([k, sub, v], idx) => `
+            <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${
+              idx >= rows.length - 2
+                ? "bg-indigo-500/10 ring-1 ring-indigo-500/20"
+                : "bg-white/[0.02]"
+            }">
+              <div class="min-w-0">
+                <div class="truncate font-medium ${
+                  idx === rows.length - 1 ? "text-white" : "text-slate-200"
+                }">${k}</div>
+                ${
+                  sub
+                    ? `<div class="truncate text-[11px] text-slate-500">${sub}</div>`
+                    : ""
+                }
+              </div>
+              <div class="shrink-0 font-semibold ${
+                idx === rows.length - 1 ? "text-white" : "text-slate-100"
+              }">${v}</div>
+            </div>`,
+          )
+          .join("");
+      }
+
+      function bindInputs() {
+        [
+          "persons",
+          "priceBaguio",
+          "priceBataan",
+          "mileageDown",
+          "mileageUp",
+          "distance",
+          "toll",
+        ].forEach((id) => $(id).addEventListener("input", render));
+        $("driverPays").addEventListener("change", render);
+
+        document.querySelectorAll(".trip-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            tripType = btn.dataset.trip;
+            document.querySelectorAll(".trip-btn").forEach((b) => {
+              b.classList.toggle("active", b === btn);
+              b.classList.toggle("text-slate-300", b !== btn);
+            });
+            render();
+          });
+        });
+
+        $("resetBtn").addEventListener("click", () => {
+          $("persons").value = DEFAULTS.persons;
+          $("priceBaguio").value = DEFAULTS.priceBaguio;
+          $("priceBataan").value = DEFAULTS.priceBataan;
+          $("mileageDown").value = DEFAULTS.mileageDown;
+          $("mileageUp").value = DEFAULTS.mileageUp;
+          $("distance").value = DEFAULTS.distance;
+          $("toll").value = DEFAULTS.toll;
+          $("driverPays").checked = DEFAULTS.driverPays;
+          tripType = DEFAULTS.trip;
+          document.querySelectorAll(".trip-btn").forEach((b) => {
+            const isActive = b.dataset.trip === tripType;
+            b.classList.toggle("active", isActive);
+            b.classList.toggle("text-slate-300", !isActive);
+          });
+          render();
+        });
+
+        $("copyBtn").addEventListener("click", async () => {
+          const i = getInputs();
+          const r = calc(i);
+          const lines = [
+            `Baguio ↔ Bataan trip split (${i.trip === "round" ? "round trip" : "one way"})`,
+            `Persons: ${i.persons}${i.driverPays ? "" : " (driver excluded)"}`,
+            `Distance: ${i.distance} km${i.trip === "round" ? " × 2" : ""}`,
+            "",
+            `Down  · ${r.litersDown.toFixed(2)} L × ₱${i.priceBaguio.toFixed(2)} = ${fmtPHP(r.fuelDownCost)}`,
+            `Toll down: ${fmtPHP(r.tollDown)}`,
+          ];
+          if (i.trip === "round") {
+            lines.push(
+              `Up    · ${r.litersUp.toFixed(2)} L × ₱${i.priceBataan.toFixed(2)} = ${fmtPHP(r.fuelUpCost)}`,
+              `Toll up: ${fmtPHP(r.tollUp)}`,
+            );
+          }
+          lines.push(
+            "",
+            `Total: ${fmtPHP(r.total)}`,
+            `Per person: ${fmtPHP(r.perPerson)} (÷ ${r.payers})`,
+          );
+          const text = lines.join("\n");
+          try {
+            await navigator.clipboard.writeText(text);
+            const t = $("toast");
+            t.style.opacity = "1";
+            setTimeout(() => (t.style.opacity = "0"), 1400);
+          } catch (e) {
+            alert(text);
+          }
+        });
+      }
+
+      bindInputs();
+      render();
+    </script>
+  </body>
+</html>
